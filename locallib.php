@@ -375,30 +375,30 @@ class local_ldap extends auth_plugin_ldap {
                     if (empty ($groupe[0][$attribut])) {
                         $attribut = $this->config->memberattribute . ";range=" . $start . '-*';
                         $fini = true;
-                    }
+                    } else {
+                        for ($g = 0; $g < (count($groupe[0][$attribut]) - 1); $g++) {
 
-                    for ($g = 0; $g < (count($groupe[0][$attribut]) - 1); $g++) {
+                            $memberstring = trim($groupe[0][$attribut][$g]);
+                            if ($memberstring != "") {
+                                // In AD, group object's member values are always full DNs.
+                                if ($this->config->process_nested_groups && ($groupcn = $this->is_ldap_group($memberstring))) {
+                                    // Recursive call in case of funny directory where groups are member of groups.
+                                    if (array_key_exists($memberstring, $this->antirecursionarray)) {
+                                        unset($this->antirecursionarray[$memberstring]);
+                                        continue;
+                                    }
 
-                        $memberstring = trim($groupe[0][$attribut][$g]);
-                        if ($memberstring != "") {
-                            // In AD, group object's member values are always full DNs.
-                            if ($this->config->process_nested_groups && ($groupcn = $this->is_ldap_group($memberstring))) {
-                                // Recursive call in case of funny directory where groups are member of groups.
-                                if (array_key_exists($memberstring, $this->antirecursionarray)) {
+                                    $this->antirecursionarray[$memberstring] = 1;
+                                    $tmp = $this->ldap_get_group_members_ad($groupcn);
+                                    if (!$tmp) {
+                                        return false;
+                                    }
                                     unset($this->antirecursionarray[$memberstring]);
-                                    continue;
-                                }
-
-                                $this->antirecursionarray[$memberstring] = 1;
-                                $tmp = $this->ldap_get_group_members_ad($groupcn);
-                                if (!$tmp) {
-                                    return false;
-                                }
-                                unset($this->antirecursionarray[$memberstring]);
-                                $ret = array_merge($ret, $tmp);
-                            } else {
-                                if ($cpt = $this->get_username_bydn($memberstring)) {
-                                    $ret[] = $cpt;
+                                    $ret = array_merge($ret, $tmp);
+                                } else {
+                                    if ($cpt = $this->get_username_bydn($memberstring)) {
+                                        $ret[] = $cpt;
+                                    }
                                 }
                             }
                         }

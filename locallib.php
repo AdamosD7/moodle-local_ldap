@@ -769,7 +769,7 @@ class local_ldap extends auth_plugin_ldap {
                     continue;
                 }
                 $ldapmembers = $this->ldap_get_group_members($groupname);
-                if (!$ldapmembers || count($ldapmembers) == 0) {
+                if (!is_array($ldapmembers) || count($ldapmembers) == 0) {
                     // Do not create an empty cohort.
                     continue;
                 }
